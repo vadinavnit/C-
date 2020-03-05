@@ -1,0 +1,23 @@
+string filename = "";
+
+            if (System.Web.HttpContext.Current.Request.Files.AllKeys.Any())
+
+            {
+                var pic = System.Web.HttpContext.Current.Request.Files["imagefile"];
+                HttpPostedFileBase filebase = new HttpPostedFileWrapper(pic);
+                var fileName = Path.GetFileName(filebase.FileName);
+                string fileExtension = System.IO.Path.GetExtension(fileName);
+                if (fileExtension == ".png" || fileExtension == ".jpg")
+                {
+                    string FileName = Guid.NewGuid().GetHashCode().ToString("x");
+                    string dirLocation = Server.MapPath("~/Content/file/");
+                    if (!Directory.Exists(dirLocation))
+                    {
+                        Directory.CreateDirectory(dirLocation);
+                    }
+                    string fileLocation = Server.MapPath("~/Content/file/") + FileName + fileExtension;
+                    filebase.SaveAs(fileLocation);
+                    filename = FileName + fileExtension;
+                }
+            }
+
