@@ -1,0 +1,30 @@
+    public static DateTime ConvertDDMMYYYYtoYYYYMMDD(string Date)
+        {
+            
+            try
+            {
+                string[] d = Date.Split('/');
+                DateTime FinalDate = Convert.ToDateTime(d[2] + "/" + d[1] + "/" + d[0]);
+                return FinalDate;
+            }
+
+            catch
+            {
+                return Convert.ToDateTime(Date);
+            }
+        }
+
+
+        public static string ConvertSQLDate(string Date)
+        {
+            try
+            {
+                string[] d = Date.Split('/');
+                string FinalDate = d[2] + "/" + d[1] + "/" + d[0];
+                return FinalDate;
+            }
+            catch
+            {
+                return Date;
+            }
+        }
