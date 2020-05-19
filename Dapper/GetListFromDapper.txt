@@ -1,0 +1,12 @@
+   public async Task<List<EmployeeActivityLogModelDto>> GetUserActivityLogDetail(long CompanyID, long EmployeeID, string SystemUnitID, string FromDate, string ToDate)
+        {
+            IEnumerable<EmployeeActivityLogModelDto> list;
+            using (var connection = new SqlConnection(_context.Database.GetDbConnection().ConnectionString))
+            {
+                await connection.OpenAsync();
+                list = await connection.QueryAsync<EmployeeActivityLogModelDto>("GetUserActivityLogDetail",
+                    new { EmployeeID = EmployeeID, CompanyID = CompanyID, SystemUnitID = SystemUnitID, FromDate = FromDate, ToDate = ToDate },
+                    commandType: CommandType.StoredProcedure);
+            }
+            return list.ToList();
+        }
