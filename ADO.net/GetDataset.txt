@@ -1,0 +1,35 @@
+ public DataSet GetRAPPriceListBindData(string colorshape, string rdate, ref string NDate, ref string PDate)
+        {
+
+            DataSet ds = new DataSet();
+            try
+            {
+                SqlParameter PreDate = new SqlParameter("@PreDate", SqlDbType.NVarChar, 1000);
+                PreDate.Direction = ParameterDirection.InputOutput;
+
+                SqlParameter NextDate = new SqlParameter("@NextDate", SqlDbType.NVarChar, 1000);
+                NextDate.Direction = ParameterDirection.InputOutput;
+
+                SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["Conn"].ConnectionString);
+                SqlDataAdapter da = new SqlDataAdapter();
+                SqlCommand cmd = conn.CreateCommand();
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandText = "RAPPrice_Report";
+                cmd.Parameters.AddWithValue("@Shape", colorshape);
+                cmd.Parameters.AddWithValue("@RDate", rdate);
+                cmd.Parameters.Add(PreDate);
+                cmd.Parameters.Add(NextDate);
+
+
+                da.SelectCommand = cmd;
+                conn.Open();
+                da.Fill(ds);
+                conn.Close();
+
+                PDate = Convert.ToString(PreDate.Value);
+                NDate = Convert.ToString(NextDate.Value);
+            }
+            catch (Exception ex)
+            { }
+            return ds;
+        }

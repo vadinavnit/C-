@@ -1,0 +1,38 @@
+ public Int32 InsertUpdate(RapPrice_Update_Model Data,DataTable DtRap)
+        {
+            try
+            {
+                using (SqlConnection sConn = new SqlConnection(ConfigurationManager.ConnectionStrings["Conn"].ConnectionString))
+                {
+                    sConn.Open();
+                    SqlParameter sqlOutput = new SqlParameter("@RetVal", 0);
+                    sqlOutput.Direction = ParameterDirection.InputOutput;
+                    SqlTransaction sqlTrans = sConn.BeginTransaction();
+                    SqlCommand sComm = new SqlCommand();
+                    sComm.Transaction = sqlTrans;
+                    sComm.Connection = sConn;
+                    sComm.CommandText = "Live_RAP_Insert";
+                    sComm.CommandType = System.Data.CommandType.StoredProcedure;
+                    sComm.Parameters.AddWithValue("@Is_ByFile", Data.IsByFile);
+                    sComm.Parameters.AddWithValue("@UploadBy", Data.UploadBy);
+                    sComm.Parameters.AddWithValue("@Update_From_IP", Common.GetIPAddress());
+                    sComm.Parameters.AddWithValue("@Branch_ID", Data.BranchID);
+                    sComm.Parameters.AddWithValue("@FY_ID", Data.FyID);
+                    sComm.Parameters.AddWithValue("@IsOverWrite", Data.IsOverWrite);
+                    sComm.Parameters.AddWithValue("@RapDt", DtRap);
+                    sComm.Parameters.Add(sqlOutput);
+                    sComm.ExecuteNonQuery();
+                    var returnval = Convert.ToInt32(sqlOutput.Value);
+                    if (returnval > 0)
+                    {
+                        sqlTrans.Commit();
+
+                    }
+                    return returnval;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
