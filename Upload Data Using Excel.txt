@@ -1,0 +1,153 @@
+        public JsonResult Import_Stock()
+        {
+            try
+            {
+                int UserID = 0;
+                M_Users_Login_Result _res = Common.GetSessionValue();
+                if (_res != null)
+                {
+                    UserID = _res.UserID;
+                }
+                else
+                {
+                    return Json("-1", JsonRequestBehavior.AllowGet);
+                }
+                DataSet ds = new DataSet();
+                if (System.Web.HttpContext.Current.Request.Files.AllKeys.Any())
+                {
+                    var pic = System.Web.HttpContext.Current.Request.Files["fuExcel"];
+                    HttpPostedFileBase filebase = new HttpPostedFileWrapper(pic);
+                    var fileName = Path.GetFileName(filebase.FileName);
+                    string fileExtension = System.IO.Path.GetExtension(fileName);
+                    //string[] arrfield = Request["arrfield"].Split(',');
+                    if (fileExtension == ".xls" || fileExtension == ".xlsx")
+                    {
+                        string FileName = Guid.NewGuid().GetHashCode().ToString("x") + "_" + UserID.ToString();
+                        string dirLocation = Server.MapPath("~/UserData/" + UserID.ToString() + "/");
+                        if (!Directory.Exists(dirLocation))
+                        {
+                            Directory.CreateDirectory(dirLocation);
+                        }
+                        string fileLocation = dirLocation + FileName + fileExtension;
+                        filebase.SaveAs(fileLocation);
+                        string excelConnectionString = string.Empty;
+                        excelConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" +
+                        fileLocation + ";Extended Properties=\"Excel 12.0;HDR=Yes;IMEX=1\"";
+                        if (fileExtension == ".xls")
+                        {
+                            excelConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" +
+                            fileLocation + ";Extended Properties=\"Excel 8.0;HDR=Yes;IMEX=1\"";
+                        }
+                        else if (fileExtension == ".xlsx")
+                        {
+                            excelConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" +
+                            fileLocation + ";Extended Properties=\"Excel 12.0;HDR=Yes;IMEX=1\"";
+                        }
+                        using (OleDbConnection excelConnection = new OleDbConnection(excelConnectionString))
+                        {
+                            try
+                            {
+                                excelConnection.Open();
+                                DataTable dt = new DataTable();
+                                dt = excelConnection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
+                                if (dt == null)
+                                {
+                                    return Json("-2", JsonRequestBehavior.AllowGet);
+                                }
+                                String[] excelSheets = new String[dt.Rows.Count];
+                                int t = 0;
+                                //excel data saves in temp file here.
+                                foreach (DataRow row in dt.Rows)
+                                {
+                                    excelSheets[t] = row["TABLE_NAME"].ToString();
+                                    t++;
+                                }
+                                using (OleDbConnection excelConnection1 = new OleDbConnection(excelConnectionString))
+                                {
+                                    string query = string.Format("Select * from [{0}]", excelSheets[0]);
+                                    using (OleDbDataAdapter dataAdapter = new OleDbDataAdapter(query, excelConnection1))
+                                    {
+                                        dataAdapter.Fill(ds);
+                                    }
+                                }
+                            }
+                            catch (OleDbException oledb)
+                            {
+                                return Json("-505", JsonRequestBehavior.AllowGet);
+                            }
+                            finally
+                            {
+                                excelConnection.Close();
+                            }
+                        }
+                        if (System.IO.File.Exists(fileLocation))
+                        {
+                            System.IO.File.Delete(fileLocation);
+                        }
+                    }
+                    else
+                    {
+                        // Select valid Excel File
+                        return Json("-3", JsonRequestBehavior.AllowGet);
+                    }
+                    DataTable dtExcel = ds.Tables[0];
+                    string StockTemplateID = System.Web.HttpContext.Current.Request["StockTemplateID"];
+                    string StockType_ID = System.Web.HttpContext.Current.Request["StockType_ID"];
+
+                    Import_Templates_Repo repo = new Import_Templates_Repo();
+                    List<Import_Def_Column_GetData_New_Result> lstobj = repo.GetStockTemplate(Convert.ToInt32(StockTemplateID), Convert.ToInt32(StockType_ID));
+                    foreach (DataColumn dc in dtExcel.Columns)
+                    {
+                        if (lstobj.Where(x => x.MapColumnName == dc.ColumnName).Count() > 0)
+                            dc.ColumnName = lstobj.Where(x => x.MapColumnName == dc.ColumnName).FirstOrDefault().Def_Column_Name;
+                    }
+                    //List<Import_Def_Column_GetData_New_Result> GetStockTemplate(int TempalteID, int TemplateType)
+                    //string[] selectedColumns = new[] { "Shape", "Color" };
+                    //DataTable dt1 = new DataView(dtExcel).ToTable(false, aa);
+                    int rowIndexNumber = 0;
+                    List<DropDown_Model> columnNames =
+                        (from u in dtExcel.Columns.Cast<DataColumn>()
+                         select new DropDown_Model
+                         {
+                             Name = u.ColumnName
+                         }
+                         ).ToList();
+                    columnNames.ToList()
+                      .ForEach(rowItem =>
+                      {
+                          rowIndexNumber += 1;
+                          rowItem.ID = rowIndexNumber;
+                      }
+                       );
+                    if (columnNames.GroupBy(n => n).Any(c => c.Count() > 1))
+                    {
+                        //duplicate column name found
+                        return Json("-5", JsonRequestBehavior.AllowGet);
+                    }
+                    if (columnNames.Count() > 0)
+                    {
+                        if (columnNames[0].Name == "F1")
+                        {
+                            return Json("-3", JsonRequestBehavior.AllowGet);
+                        }
+                    }
+                    List<Import_Def_Column_GetData_Result> _defaultColumn = new List<Import_Def_Column_GetData_Result>();
+                    if (!string.IsNullOrEmpty(StockTemplateID))
+                    {
+                        StockType_Repo r = new StockType_Repo();
+                        _defaultColumn = r.GetDefaultColumn(Convert.ToInt32(StockTemplateID));
+                    }
+                    return Json(new { colName = columnNames, defalutCol = _defaultColumn, dtStock = JsonConvert.SerializeObject(dtExcel) }, JsonRequestBehavior.AllowGet);
+                }
+                else
+                {
+                    //select file first
+                    return Json("-4", JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json("-505", JsonRequestBehavior.AllowGet);
+
+            }
+        }
