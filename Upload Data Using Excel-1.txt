@@ -1,0 +1,83 @@
+        public JsonResult Import_Stock()
+        {
+            try
+            {
+ 		DataSet ds = new DataSet();
+                if (System.Web.HttpContext.Current.Request.Files.AllKeys.Any())
+                {
+                    var file = System.Web.HttpContext.Current.Request.Files["file"];
+                    HttpPostedFileBase filebase = new HttpPostedFileWrapper(file);
+                    var fileName = Path.GetFileName(filebase.FileName);
+                    string fileExtension = System.IO.Path.GetExtension(fileName);
+                    if (fileExtension == ".xls" || fileExtension == ".xlsx")
+                    {
+                        string FileName = Guid.NewGuid().GetHashCode().ToString("x");
+                        string dirLocation = HttpContext.Current.Server.MapPath("~/UserContact/" + 1.ToString() + "/");
+                        if (!Directory.Exists(dirLocation))
+                        {
+                            Directory.CreateDirectory(dirLocation);
+                        }
+                        string fileLocation = dirLocation + FileName + fileExtension;
+                        filebase.SaveAs(fileLocation);
+                        string excelConnectionString = string.Empty;
+                        excelConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" +
+                        fileLocation + ";Extended Properties=\"Excel 12.0;HDR=Yes;IMEX=1\"";
+                        if (fileExtension == ".xls")
+                        {
+                            excelConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" +
+                            fileLocation + ";Extended Properties=\"Excel 8.0;HDR=Yes;IMEX=1\"";
+                        }
+                        else if (fileExtension == ".xlsx")
+                        {
+                            excelConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" +
+                            fileLocation + ";Extended Properties=\"Excel 12.0;HDR=Yes;IMEX=1\"";
+                        }
+                        using (OleDbConnection excelConnection = new OleDbConnection(excelConnectionString))
+                        {
+                            try
+                            {
+                                excelConnection.Open();
+                                DataTable dt = new DataTable();
+                                dt = excelConnection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
+                                if (dt == null)
+                                {
+                                    //return Json("-2", JsonRequestBehavior.AllowGet);
+                                    Obj.ReturnCode = ResponseMessages.ErrorCode;
+                                    Obj.ReturnMsg = ResponseMessages.ErrorMsg;
+                                    Obj.ReturnValue = string.Empty;
+                                }
+                                String[] excelSheets = new String[dt.Rows.Count];
+                                int t = 0;
+                                //excel data saves in temp file here.
+                                foreach (DataRow row in dt.Rows)
+                                {
+                                    excelSheets[t] = row["TABLE_NAME"].ToString();
+                                    t++;
+                                }
+                                using (OleDbConnection excelConnection1 = new OleDbConnection(excelConnectionString))
+                                {
+                                    string query = string.Format("Select * from [{0}]", excelSheets[0]);
+                                    using (OleDbDataAdapter dataAdapter = new OleDbDataAdapter(query, excelConnection1))
+                                    {
+                                        dataAdapter.Fill(ds);
+                                        Obj = _Service.ImportContact(ds.Tables[0]);
+                                    }
+                                }
+                            }
+                            catch (OleDbException oledb)
+                            {
+                                //return Json("-505", JsonRequestBehavior.AllowGet);
+                                Obj.ReturnCode = ResponseMessages.ErrorCode;
+                                Obj.ReturnMsg = ResponseMessages.ErrorMsg;
+                                Obj.ReturnValue = string.Empty;
+                            }
+                            finally
+                            {
+                                excelConnection.Close();
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
