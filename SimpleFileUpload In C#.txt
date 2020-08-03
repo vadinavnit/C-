@@ -1,0 +1,44 @@
+Model
+public class Student()
+{
+	public string Name {get; set;}
+	public HttpPostedFileBase Image {get; set;}
+}
+
+
+
+[HttpPost]
+public ActionResult Index(Student model)
+{
+	
+	var path = Server.MapPath("~/Content/Upload");
+
+        if (!Directory.Exists(path))
+        {
+              Directory.CreateDirectory(path);
+        }
+
+	var fileName = Path.GetFileName(model.Image.FileName);
+	var fullPath =  Path.combine(path,fileName);
+	model.Image.SaveAs(fullPath);
+
+	return view();
+
+}
+
+
+
+@model FileUploader.Model.Student
+
+<div class="row">
+<div class="col-md-10">
+@using(Html.BeginForm("Index","Home", FormMethod.Post, new { @enctype = "multipart/form-data"}))
+{
+	@Html.EditorFor(x=>x.Name); </br>
+	<input type="file" name="file">
+	<input type="submit" value="save">
+}
+</div>
+
+</div>
+ 
