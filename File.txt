@@ -1,0 +1,23 @@
+
+
+byte[] byte = Convert.FromBase64String("base64string");
+string str = Convert.ToBase64String("base64string");
+
+
+File To Byte Array
+
+byte[] img = File.WriteAllBytes("path","fileinbyte")
+
+
+
+Convert File to byte array
+
+byte[] buffer;
+using(var ms = new MemoryStream())
+{
+	model.File.CopyTo(ms);
+	buffer = ms.ToArray();		
+}
+
+
+Path.Combine("","");
