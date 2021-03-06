@@ -1,14 +1,26 @@
 
 
-byte[] byte = Convert.FromBase64String("base64string");
-string str = Convert.ToBase64String("base64string");
+byte[] byte = Convert.FromBase64String("base64string"); //Convert from base64String to byte array
+string str = Convert.ToBase64String(byteArray); //Convert from byte array to base64String
 
 
 File To Byte Array
 
-byte[] img = File.WriteAllBytes("path","fileinbyte")
 
-
+public static byte[] GetByteImageFromPath(fileName) 
+{
+	byte[] imageByte = null;
+	if(!string.IsNullOrWhiteSpace(fileName))
+	{
+		var rootPath = System.IO.Directory().GetCurrentDirectory() + "//Content//Customer//"
+		var imagePath = Path.Combine(root, fileName);
+		if(File.Exist(imagePath))
+		{
+			imageByte = File.ReadAllBytes(imagePath);
+		}
+		returrn imageByte;
+	}
+}
 
 Convert File to byte array
 
@@ -20,4 +32,3 @@ using(var ms = new MemoryStream())
 }
 
 
-Path.Combine("","");
